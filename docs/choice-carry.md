@@ -28,6 +28,9 @@ actions. Enter, keypad Enter, Space, Escape, and A/B now coexist.
 - Rereading follows the previously selected stance response and disclosure
   ending, both within the session and after Continue. New Game clears them.
 - Choosing a stance sets the other stance false.
+- `radioed_tom` now selects a returning-call greeting after either radio topic.
+  Both topics remain available. Missing/false gets the original first-call
+  greeting; New Game resets it and Continue restores it.
 - An absent disclosure flag means unanswered; a stored false means keep quiet.
 - Version-1 saves keep their canonical names and unknown flags; an optional
   `journal_entries` array is added for discovered logs.
@@ -84,6 +87,7 @@ The runner isolates `user://` in a temporary directory, validates both authored
 graphs, runs fourteen validator unit tests, imports the project, and runs Godot
 regressions. The engine tests cover all four stance/disclosure combinations,
 false versus absent, exclusive flags, legacy/ambiguous saves, repeated reads,
+first/returning radio calls after both topics and a fresh-process Continue,
 New Game, invalid choice indexes, keyboard mappings, and the real world-object,
 choice-button, pause Save, Main Menu, and Continue signal flow. Journal checks
 cover authored discovery, duplicate suppression, reset, legacy/malformed data,

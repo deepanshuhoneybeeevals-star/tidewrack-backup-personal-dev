@@ -42,13 +42,17 @@ stable — save files and future branches depend on them.
 | `skeptic`       | Logbook, choice 1                        | Player dismisses Edith's account. |
 | `believer`      | Logbook, choice 1                        | Player believes something was out there. |
 | `trusted_edith` | Logbook, choice 2 (true/false)           | Player will / won't share the log. |
-| `radioed_tom`   | Radio conversation                        | Player has contacted Tom. |
+| `radioed_tom`   | Radio conversation                        | Player has contacted Tom; subsequent calls use his returning greeting. |
 
 Keeper decisions are remembered when the log is reread. The two stance flags
 are mutually exclusive when chosen. `trusted_edith: false` is a deliberate
 quiet decision; a missing flag means the player has not answered. Legacy saves
 with both stances true require a new stance choice because their ordering is
 unknown. Canonical flag names and the version-1 save format remain unchanged.
+
+Either radio topic sets `radioed_tom` true. Later calls acknowledge that contact
+and still offer both Edith and check-in topics. Missing/false uses the first-call
+greeting; Continue retains the returning greeting and New Game resets it.
 
 ## Timeline (fiction)
 

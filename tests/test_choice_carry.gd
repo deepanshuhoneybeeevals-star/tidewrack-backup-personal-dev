@@ -79,6 +79,7 @@ func _run() -> void:
 	test_choice_matrix()
 	test_legacy_saves()
 	test_journal()
+	test_radio_memory()
 	await test_menu_flow()
 	GameState.delete_save()
 	print("Choice and journal tests: %d failure(s)" % failures)
@@ -190,6 +191,8 @@ func test_menu_flow() -> void:
 	box._process(100.0)
 	button_named(box, "Keep it to yourself for now.").pressed.emit()
 	DialogueManager.advance()
+	game._interactables[1].interact()
+	finish_dialogue()
 	game._toggle_pause()
 	button_named(game, "Save").pressed.emit()
 	check(button_named(game, "Saved ✓") != null, "pause Save reports success")
@@ -208,6 +211,9 @@ func test_menu_flow() -> void:
 	check(game.scene_file_path == "res://scenes/game.tscn", "Continue opens saved scene")
 	check(GameState.flags == expected, "Continue restores decisions")
 	check(Journal.entries() == ["keeper_log"], "Continue restores log before interacting again")
+	game._interactables[1].interact()
+	check(last_text.contains("You again."), "radio world object remembers contact after Continue")
+	finish_dialogue()
 	game._interactables[0].interact()
 	check(Journal.entries() == ["keeper_log"], "world logbook discovers exactly one log")
 	DialogueManager.advance()
@@ -289,6 +295,8 @@ func test_journal_restart_write() -> void:
 	DialogueManager.start(INTRO, "logbook")
 	finish_dialogue()
 	Journal.discover("test_second_log")
+	DialogueManager.start(INTRO, "radio")
+	finish_dialogue()
 	check(GameState.save_game(), "cross-process save succeeds")
 	print("JOURNAL RESTART: saved keeper log and second test entry")
 
@@ -308,8 +316,44 @@ func test_journal_restart_read() -> void:
 	game._interactables[0].interact()
 	finish_dialogue()
 	check(Journal.entries() == ["keeper_log", "test_second_log"], "post-restart reread does not duplicate entries")
+	game._interactables[1].interact()
+	check(last_text.contains("You again."), "fresh-process Continue preserves Tom's returning greeting")
+	finish_dialogue()
 	game.queue_free()
 	get_tree().current_scene = null
 	await get_tree().process_frame
 	GameState.delete_save()
 	print("JOURNAL RESTART: Continue verified in a separate process")
+
+
+func test_radio_memory() -> void:
+	for prior in [null, false]:
+		for first_choice in 2:
+			GameState.new_game()
+			if prior != null:
+				GameState.set_flag("radioed_tom", prior)
+			DialogueManager.start(INTRO, "radio")
+			check(last_text.contains("Took you long enough"), "missing or false flag uses first-call greeting")
+			check(GameState.get_flag("radioed_tom") == false, "opening radio alone does not record a completed choice")
+			DialogueManager.advance()
+			check(last_choices.size() == 2, "first call retains both topics")
+			DialogueManager.choose(first_choice)
+			check(GameState.get_flag("radioed_tom") == true, "either first-call topic records contact")
+			DialogueManager.advance()
+			for after_load in [false, true]:
+				if after_load:
+					check(GameState.save_game(), "radio memory saves")
+					GameState.new_game()
+					check(GameState.load_game(), "radio memory loads")
+				DialogueManager.start(INTRO, "radio")
+				check(last_text.contains("You again."), "Tom remembers repeat call in-session and after load")
+				check(last_choices.size() == 2, "returning call retains Edith and check-in topics")
+				DialogueManager.choose(1 - first_choice)
+				check(last_text.contains("Edith. Yeah.") if first_choice == 1 else last_text.contains("Salish out."), "returning caller can choose the other topic")
+				DialogueManager.advance()
+				check(not DialogueManager.is_active, "returning call terminates")
+			check(Journal.entries().is_empty(), "radio calls do not create journal logs")
+	GameState.new_game()
+	DialogueManager.start(INTRO, "radio")
+	check(last_text.contains("Took you long enough"), "New Game restores first call")
+	finish_dialogue()

@@ -67,6 +67,20 @@
 		"next": null
 	},
 	"radio": {
+		"branches": [
+			{"when": {"radioed_tom": true}, "next": "radio_return"}
+		],
+		"next": "radio_first"
+	},
+	"radio_return": {
+		"speaker": "Radio — Tom Salish",
+		"text": "\"Marrow light. You again. I’m still here. What do you need?\"",
+		"choices": [
+			{"text": "Ask him about Edith.", "next": "radio_edith", "set_flag": {"radioed_tom": true}},
+			{"text": "Just check in.", "next": "radio_checkin", "set_flag": {"radioed_tom": true}}
+		]
+	},
+	"radio_first": {
 		"speaker": "Radio — Tom Salish",
 		"text": "The set crackles, then finds a voice. \"Marrow light, this is Salish on the mainland. Took you long enough to switch that on. You settling in okay out there?\"",
 		"next": "radio_2"
