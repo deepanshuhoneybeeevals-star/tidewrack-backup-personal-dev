@@ -195,8 +195,6 @@ Completed in this PR and covered by automated checks:
 
 Still required before release; check these on the actual exported target build:
 
-- [ ] Implement or explicitly defer wall collision. `scripts/player.gd` still
-  has an unused TODO helper; movement currently enforces only room bounds.
 - [ ] Run the keyboard flow from a fresh save: choose skeptic and quiet, finish
   the conversation, then Escape → Save → Main Menu → Continue. Reread without
   new decisions; fully quit/relaunch and repeat. Verify both radio topics and
@@ -216,5 +214,11 @@ Still required before release; check these on the actual exported target build:
 - [ ] Review and integrate PR #1, rerun the suite on the final candidate after
   any changes, and cut the demo branch from the reviewed commit.
 
-The journal reader screen is deferred, and a larger lamp puzzle is outside the
-agreed minimal scope. Neither is an unfinished requirement for this PR.
+Scope decisions:
+
+- [x] Wall collision is explicitly deferred until after the demo (2026-10-12).
+  The demo uses room bounds only; the unused TODO helper in `scripts/player.gd`
+  remains unfinished. This is no longer a demo release gate. Track the follow-up
+  in `docs/milestones.md`; its implementation milestone is not yet assigned.
+- The journal reader screen is deferred, and a larger lamp puzzle is outside
+  the agreed minimal scope. Neither is an unfinished requirement for this PR.
