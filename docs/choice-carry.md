@@ -56,6 +56,14 @@ ignored and duplicates removed while valid unknown IDs are preserved.
 The journal screen is explicitly deferred to a later milestone. This change
 implements the running service, discovery hook, and persistence only.
 
+## Pause-menu cleanup
+
+A second Escape previously restored movement without removing the pause layer;
+only the Resume button freed it. Repeated toggles could stack overlays. Escape
+and Resume now share one cleanup path that detaches and frees the overlay and
+restores movement. Settings still consumes Escape first, leaving the game
+paused, and dialogue still blocks pause.
+
 ## Repeatable checks
 
 On Linux or WSL with Godot 4.3 installed:
@@ -73,8 +81,10 @@ choice-button, pause Save, Main Menu, and Continue signal flow. Journal checks
 cover authored discovery, duplicate suppression, reset, legacy/malformed data,
 and ordered multi-entry restoration. A separate Godot process saves and exits,
 then a fresh process uses the actual Continue button to restore the entries.
-The test scene
-refuses to run against the ordinary user-data directory.
+The save test scene
+refuses to run against the ordinary user-data directory. Pause regressions
+dispatch actual Escape key events through Godot, covering repeated cycles,
+key-repeat suppression, Resume, nested Settings, and the dialogue guard.
 
 Before the fix, the disk checks passed and the two reread checks failed. Before
 the input fix, all seven keyboard-binding checks failed. All now pass.

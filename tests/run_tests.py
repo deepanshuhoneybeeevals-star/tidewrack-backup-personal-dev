@@ -31,6 +31,7 @@ def main():
         run(["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"], env)
         run([args.godot, "--headless", "--path", ".", "--editor", "--import", "--quit"], env)
         run([args.godot, "--headless", "--path", ".", "tests/test_choice_carry.tscn"], env)
+        run([args.godot, "--headless", "--path", ".", "tests/test_pause_menu.tscn"], env)
         for mode in ("--journal-write", "--journal-read"):
             run([args.godot, "--headless", "--path", ".", "tests/test_choice_carry.tscn", "--", mode], env)
 
