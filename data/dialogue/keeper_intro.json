@@ -1,5 +1,6 @@
 {
 	"logbook": {
+		"journal_entry": "keeper_log",
 		"speaker": "Keeper's Log",
 		"text": "The ledger is open to the last filled page. The handwriting is Edith Vane's — the keeper who was here before you. It gets smaller toward the bottom, as if she were running out of nerve, not paper.",
 		"next": "logbook_2"
@@ -7,14 +8,22 @@
 	"logbook_2": {
 		"speaker": "Edith Vane",
 		"text": "\"Third night of fog. There is a light off the north rocks that answers mine. It is not the buoy. It is not a ship. It keeps my rhythm — three flashes, then dark — and I have told no one because there is no one out there to tell.\"",
+		"next": "logbook_stance"
+	},
+	"logbook_stance": {
+		"branches": [
+			{"when": {"skeptic": true, "believer": true}, "next": "logbook_choice1"},
+			{"when": {"skeptic": true}, "next": "logbook_skeptic"},
+			{"when": {"believer": true}, "next": "logbook_believer"}
+		],
 		"next": "logbook_choice1"
 	},
 	"logbook_choice1": {
 		"speaker": "",
 		"text": "You close your eyes. The lamp above you is cold and dead.",
 		"choices": [
-			{ "text": "She was tired and seeing things.", "next": "logbook_skeptic", "set_flag": { "skeptic": true } },
-			{ "text": "Something was really out there.", "next": "logbook_believer", "set_flag": { "believer": true } }
+			{ "text": "She was tired and seeing things.", "next": "logbook_skeptic", "set_flag": { "skeptic": true, "believer": false } },
+			{ "text": "Something was really out there.", "next": "logbook_believer", "set_flag": { "believer": true, "skeptic": false } }
 		]
 	},
 	"logbook_skeptic": {
@@ -30,6 +39,13 @@
 	"logbook_merge": {
 		"speaker": "Edith Vane",
 		"text": "\"If it answers again tonight, I am going to row out and meet it. I will relight the lamp first so whoever comes next can find the way back. Forgive the mess. — E.V.\"",
+		"next": "logbook_disclosure"
+	},
+	"logbook_disclosure": {
+		"branches": [
+			{"when": {"trusted_edith": true}, "next": "logbook_end_radio"},
+			{"when": {"trusted_edith": false}, "next": "logbook_end_quiet"}
+		],
 		"next": "logbook_choice2"
 	},
 	"logbook_choice2": {
@@ -51,6 +67,20 @@
 		"next": null
 	},
 	"radio": {
+		"branches": [
+			{"when": {"radioed_tom": true}, "next": "radio_return"}
+		],
+		"next": "radio_first"
+	},
+	"radio_return": {
+		"speaker": "Radio — Tom Salish",
+		"text": "\"Marrow light. You again. I’m still here. What do you need?\"",
+		"choices": [
+			{"text": "Ask him about Edith.", "next": "radio_edith", "set_flag": {"radioed_tom": true}},
+			{"text": "Just check in.", "next": "radio_checkin", "set_flag": {"radioed_tom": true}}
+		]
+	},
+	"radio_first": {
 		"speaker": "Radio — Tom Salish",
 		"text": "The set crackles, then finds a voice. \"Marrow light, this is Salish on the mainland. Took you long enough to switch that on. You settling in okay out there?\"",
 		"next": "radio_2"
@@ -75,7 +105,7 @@
 	},
 	"door": {
 		"speaker": "",
-		"text": "The spiral stair climbs into the dark toward the lamp room. The great light is dead — no oil, no spark, no reason it should have gone out. Until you relight it, the water past the rocks stays invisible. (The lamp room is the next chapter.)",
+		"text": "The spiral stair climbs into the dark toward the lamp room. The great light is dead — no oil, no spark, no reason it should have gone out. Until you relight it, the water past the rocks stays invisible.",
 		"next": null
 	}
 }

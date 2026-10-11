@@ -19,8 +19,9 @@ Built solo by **Fogline Games** (Seattle) in **Godot 4**, shipping to Steam.
 | Advance / skip line | Enter / Space     |
 | Pause / back  | Esc                     |
 
-The game uses only Godot's built-in input actions, so it works with no input
-remapping (controller support and remappable keys are a Public Demo milestone).
+The game uses Godot's built-in input actions. Bindings include keyboard controls,
+left-stick/D-pad movement, A to accept, and B to pause/back (Xbox-style labels).
+Accept/cancel explicitly include both keyboard and gamepad events.
 
 ## Running it
 
@@ -41,7 +42,7 @@ The main scene is `scenes/main_menu.tscn`. Saves are written to Godot's
 
 ```
 tidewrack/
-├── project.godot            # engine config; registers the two autoloads
+├── project.godot            # engine config; registers the three autoloads
 ├── scenes/                  # thin .tscn wrappers (root node + script)
 │   ├── main_menu.tscn
 │   ├── game.tscn            # the vertical-slice level
@@ -68,9 +69,16 @@ avoids merge pain — a deliberate choice for a one-person studio.
 
 ## The dialogue system
 
-Conversations are plain JSON graphs in `data/dialogue/`. Each node is either a
-linear line (`"next": "<id>"`, or `null` to end) or a choice node (`"choices"`).
-Any node can set story flags via `"set_flag"`, which `GameState` persists.
+Conversations are plain JSON graphs in `data/dialogue/`. Nodes can show a
+linear line (`"next": "<id>"`, or `null` to end), offer choices (`"choices"`),
+or route according to saved flags (`"branches"`).
+Line and choice nodes can set story flags via `"set_flag"`, which `GameState`
+persists. Routing nodes can read those flags via ordered `"branches"` with
+`"when"` conditions and a fallback `"next"`. Keeper rereads follow the saved
+stance and disclosure decision. A displayed node can record a discovered log
+with `"journal_entry": "stable_log_id"`. The keeper log uses `keeper_log`;
+`Journal` deduplicates discoveries and `GameState` persists them. The journal
+reader UI is deferred. See [choice carry and journal persistence](docs/choice-carry.md).
 
 ```json
 {
@@ -91,20 +99,26 @@ Any node can set story flags via `"set_flag"`, which `GameState` persists.
 # Validate every dialogue graph (targets resolve, has an ending, no orphans)
 python3 tests/validate_dialogue.py
 
-# In-engine checks (requires Godot on PATH)
-godot --headless --path . --check-only   # parse all scripts
+# Runtime + validator regressions (Linux/WSL, Godot 4.3; saves isolated)
+python3 tests/run_tests.py --godot /path/to/godot
 ```
 
-> The GDScript in this build was authored without a local Godot install, so it
-> has been checked statically and via the dialogue validator, **not** yet run in
-> the engine. First engine open may surface minor fixups — tracked in the issue
-> list.
+Godot 4.3 headless checks cover keeper choices, save/load, the menu Continue
+flow, journal discovery/persistence (including a fresh-process Continue),
+legacy saves, keyboard mappings, and synthetic controller input. An exported-build visual playthrough
+and clean-account install remain release gates.
 
 ## Steam Next Fest demo
 
-The public demo (target: **Steam Next Fest**) extends the vertical slice with
-the lamp-room chapter, a discovered-logs journal, and controller support. Demo
-scope is locked in [`docs/milestones.md`](docs/milestones.md); the build is
-feature-frozen and tagged `v0.2-demo-rc`.
+The public-demo target extends the vertical slice with the lamp-room chapter
+and discovered-log tracking. Journal discovery and save persistence now work;
+the reader UI belongs to a later milestone. Although this checkout carries
+`v0.2-demo-rc`, release readiness still requires the exported-build checks.
+The stair now opens a playable lamp room: interacting with the lamp relights
+it, saves `lamp_relit`, and turns its grey body gold with a visible glow. A
+return stair leads downstairs; both rooms share pause/save controls. No puzzle
+is required. Continue restores the lamp-room scene and the lamp’s appearance.
 
-Demo controls add a gamepad (analog stick + A/B) on top of the keyboard bindings.
+See [the diagnosis and pre-branch checks](docs/choice-carry.md) for verified
+behavior and remaining demo blockers. The current fix restores the built-in
+keyboard actions; it does not add a controller-support milestone.

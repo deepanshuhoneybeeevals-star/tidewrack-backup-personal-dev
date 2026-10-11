@@ -28,3 +28,6 @@ Thumbs.db
 secrets/
 *.keystore
 steam_appid.txt
+
+# Python validation cache
+__pycache__/

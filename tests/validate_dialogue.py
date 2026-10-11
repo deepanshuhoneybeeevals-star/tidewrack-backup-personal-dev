@@ -5,8 +5,9 @@ Checks, for every data/dialogue/*.json file:
   - it parses as a JSON object of node_id -> node
   - each node is either a linear node ("next": id|null) or a choice node
     ("choices": [{text, next, set_flag?}]) — not neither, not both
+  - routing nodes have branches with flag conditions and a fallback next
   - every referenced target id exists
-  - at least one terminal (next == null) is reachable from an entry point
+  - at least one terminal is reachable from each known or entry_* entry point
   - reports orphan nodes (unreachable from any known entry) as warnings
 
 Exit code 0 = all valid, 1 = at least one error.
@@ -21,9 +22,22 @@ from pathlib import Path
 
 # Entry-point node ids the game starts graphs from (see scripts/game.gd).
 KNOWN_ENTRIES = {"logbook", "radio", "door", "start"}
+JOURNAL_ENTRY_PREFIX = "entry_"
 
 ROOT = Path(__file__).resolve().parent.parent
 DIALOGUE_DIR = ROOT / "data" / "dialogue"
+
+
+def targets(node: object) -> list:
+    """Enumerate all authored edges, tolerating malformed nodes for diagnostics."""
+    if not isinstance(node, dict):
+        return []
+    result = [node["next"]] if "next" in node else []
+    for field in ("choices", "branches"):
+        edges = node.get(field, [])
+        if isinstance(edges, list):
+            result.extend(edge.get("next") for edge in edges if isinstance(edge, dict))
+    return result
 
 
 def reachable(graph: dict, entries: set[str]) -> set[str]:
@@ -34,13 +48,7 @@ def reachable(graph: dict, entries: set[str]) -> set[str]:
         if nid in seen:
             continue
         seen.add(nid)
-        node = graph[nid]
-        targets: list[str] = []
-        if isinstance(node.get("choices"), list):
-            targets += [c.get("next") for c in node["choices"]]
-        if "next" in node:
-            targets.append(node.get("next"))
-        for t in targets:
+        for t in targets(graph[nid]):
             if isinstance(t, str) and t in graph:
                 stack.append(t)
     return seen
@@ -64,6 +72,35 @@ def validate_file(path: Path) -> tuple[list[str], list[str]]:
             errors.append(f"{path.name}:{nid}: node must be an object")
             continue
 
+        if "set_flag" in node and not isinstance(node["set_flag"], dict):
+            errors.append(f"{path.name}:{nid}: set_flag must be an object")
+        if "journal_entry" in node:
+            entry = node["journal_entry"]
+            if not isinstance(entry, str) or not entry.strip():
+                errors.append(f"{path.name}:{nid}: journal_entry must be a nonempty string")
+        if "branches" in node:
+            branches = node["branches"]
+            if not isinstance(branches, list) or not branches:
+                errors.append(f"{path.name}:{nid}: branches must be a nonempty array")
+            else:
+                for i, branch in enumerate(branches):
+                    if not isinstance(branch, dict):
+                        errors.append(f"{path.name}:{nid}: branch #{i} must be an object")
+                        continue
+                    when = branch.get("when")
+                    if not isinstance(when, dict) or not when:
+                        errors.append(f"{path.name}:{nid}: branch #{i} needs nonempty when flags")
+                    target = branch.get("next")
+                    if "next" not in branch or (target is not None and
+                            (not isinstance(target, str) or target not in graph)):
+                        errors.append(f"{path.name}:{nid}: branch #{i} needs a valid next target")
+                    if "next" in branch and target is None:
+                        has_terminal = True
+            if "next" not in node:
+                errors.append(f"{path.name}:{nid}: routing node needs a fallback next")
+            if any(key in node for key in ("choices", "text", "speaker", "set_flag", "journal_entry")):
+                errors.append(f"{path.name}:{nid}: routing node cannot show text, choices, or apply effects")
+
         has_choices = isinstance(node.get("choices"), list) and len(node["choices"]) > 0
         has_next = "next" in node
 
@@ -75,7 +112,7 @@ def validate_file(path: Path) -> tuple[list[str], list[str]]:
         if has_next and node.get("next") is None:
             has_terminal = True
 
-        if has_next and isinstance(node.get("next"), str) and node["next"] not in graph:
+        if has_next and node["next"] is not None and (not isinstance(node["next"], str) or node["next"] not in graph):
             errors.append(f"{path.name}:{nid}: 'next' points to missing node '{node['next']}'")
 
         if has_choices:
@@ -83,6 +120,8 @@ def validate_file(path: Path) -> tuple[list[str], list[str]]:
                 if not isinstance(choice, dict) or "text" not in choice:
                     errors.append(f"{path.name}:{nid}: choice #{i} needs a 'text' field")
                     continue
+                if "set_flag" in choice and not isinstance(choice["set_flag"], dict):
+                    errors.append(f"{path.name}:{nid}: choice #{i} set_flag must be an object")
                 target = choice.get("next")
                 if target is not None and (not isinstance(target, str) or target not in graph):
                     errors.append(f"{path.name}:{nid}: choice #{i} 'next' -> missing node '{target}'")
@@ -92,11 +131,20 @@ def validate_file(path: Path) -> tuple[list[str], list[str]]:
     if not has_terminal:
         errors.append(f"{path.name}: no terminal node (a node with next == null) — the graph never ends")
 
-    entries = KNOWN_ENTRIES & set(graph.keys())
+    entries = (KNOWN_ENTRIES & set(graph)) | {
+        nid for nid in graph if nid.startswith(JOURNAL_ENTRY_PREFIX)
+    }
     if not entries:
-        warnings.append(f"{path.name}: no known entry point ({sorted(KNOWN_ENTRIES)}) present")
+        warnings.append(
+            f"{path.name}: no known entry point ({sorted(KNOWN_ENTRIES)} or {JOURNAL_ENTRY_PREFIX}*) present"
+        )
     else:
         seen = reachable(graph, entries)
+        for entry in sorted(entries):
+            reachable_nodes = reachable(graph, {entry})
+            terminal_reachable = any(None in targets(graph[n]) for n in reachable_nodes)
+            if not terminal_reachable:
+                errors.append(f"{path.name}:{entry}: no reachable terminal")
         for orphan in sorted(set(graph) - seen):
             warnings.append(f"{path.name}:{orphan}: unreachable from entry points {sorted(entries)}")
 
@@ -133,16 +181,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-# --- Public Demo: journal graphs -------------------------------------------
-# The journal system (scripts/journal.gd) reads discovered-log entries from the
-# same JSON-graph format, so they validate through the checker above. Journal
-# graphs live under data/dialogue/ with an "entry_*" id and are held to the same
-# rules (targets resolve, a terminal exists). This hook is a placeholder until
-# the journal content lands for the public demo.
-JOURNAL_ENTRY_PREFIX = "entry_"
-
-
-def is_journal_graph(graph: dict) -> bool:
-	return any(str(k).startswith(JOURNAL_ENTRY_PREFIX) for k in graph)

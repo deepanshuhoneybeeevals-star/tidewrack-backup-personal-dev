@@ -7,6 +7,9 @@ extends Node
 ##     "next": String|null,                     # linear node; null ends the graph
 ##     "choices": [ {"text": String, "next": String, "set_flag": {..}} ],
 ##     "set_flag": { "flag_name": value } }      # applied when the node is entered
+## A routing node has "branches": [{"when": {flag: value}, "next": id|null}]
+## and a fallback "next". First matching branch wins; absent flags never match.
+## Displayed nodes may include "journal_entry": "stable_log_id" to discover a log.
 ##
 ## UI (dialogue_box.gd) listens to these signals; it does not read the graph.
 
@@ -19,6 +22,7 @@ var _current_id: String = ""
 var is_active: bool = false
 
 
+## Load a dialogue graph and begin at the requested entry node.
 func start(path: String, start_id: String = "start") -> bool:
 	var graph := _load_graph(path)
 	if graph.is_empty():
@@ -61,7 +65,27 @@ func choose(index: int) -> void:
 		_goto(str(next))
 
 
+## Resolve flag-based routes, apply node effects, and show the next line.
 func _goto(id: String) -> void:
+	# Routing nodes do not show a line. Bound traversal so a bad routing cycle
+	# cannot freeze the game. Ordinary dialogue loops still wait for input.
+	var visited: Dictionary = {}
+	while _graph.has(id) and _graph[id].has("branches"):
+		if visited.has(id):
+			push_error("DialogueManager: routing cycle at '%s'." % id)
+			_finish()
+			return
+		visited[id] = true
+		var route: Dictionary = _graph[id]
+		var target: Variant = route.get("next", null)
+		for branch in route["branches"]:
+			if _matches_flags(branch["when"]):
+				target = branch.get("next", null)
+				break
+		if target == null:
+			_finish()
+			return
+		id = str(target)
 	if not _graph.has(id):
 		push_error("DialogueManager: missing node '%s'." % id)
 		_finish()
@@ -69,6 +93,9 @@ func _goto(id: String) -> void:
 	_current_id = id
 	var node: Dictionary = _graph[id]
 	_apply_flags(node.get("set_flag", {}))
+	var journal_entry: Variant = node.get("journal_entry", null)
+	if typeof(journal_entry) == TYPE_STRING:
+		Journal.discover(journal_entry)
 	line_shown.emit(
 		str(node.get("speaker", "")),
 		str(node.get("text", "")),
@@ -76,11 +103,21 @@ func _goto(id: String) -> void:
 	)
 
 
+## Require every condition flag to exist and match its expected value.
+func _matches_flags(expected: Dictionary) -> bool:
+	for key in expected:
+		if not GameState.has_flag(str(key)) or GameState.get_flag(str(key)) != expected[key]:
+			return false
+	return true
+
+
+## Apply authored story flags through GameState.
 func _apply_flags(dict: Dictionary) -> void:
 	for key in dict:
 		GameState.set_flag(str(key), dict[key])
 
 
+## Clear the active conversation and notify listeners that it ended.
 func _finish() -> void:
 	is_active = false
 	_graph = {}
@@ -88,6 +125,7 @@ func _finish() -> void:
 	dialogue_finished.emit()
 
 
+## Read a JSON dialogue graph, returning an empty dictionary on failure.
 func _load_graph(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		push_error("DialogueManager: dialogue file not found: %s" % path)

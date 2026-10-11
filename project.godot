@@ -14,6 +14,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+Journal="*res://scripts/journal.gd"
 GameState="*res://scripts/autoload/game_state.gd"
 DialogueManager="*res://scripts/autoload/dialogue_manager.gd"
 
@@ -29,33 +30,19 @@ window/stretch/aspect="keep"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 
+; Keep the built-in directional actions (arrows, D-pad, and left stick).
+; Accept/cancel overrides must list keyboard AND gamepad events: these arrays
+; replace the defaults rather than adding to them.
+
 [input]
 
-; Controller support (Public Demo milestone). Gamepad events are layered onto
-; Godot's built-in ui_* actions so the keyboard bindings keep working unchanged.
 ui_accept={
 "deadzone": 0.5,
-"events": [Object(InputEventJoypadButton,"button_index":0)]
+"events": [Object(InputEventKey,"keycode":4194309), Object(InputEventKey,"keycode":4194310), Object(InputEventKey,"keycode":32), Object(InputEventJoypadButton,"button_index":0)]
 }
 ui_cancel={
 "deadzone": 0.5,
-"events": [Object(InputEventJoypadButton,"button_index":1)]
-}
-ui_left={
-"deadzone": 0.5,
-"events": [Object(InputEventJoypadMotion,"axis":0,"axis_value":-1.0)]
-}
-ui_right={
-"deadzone": 0.5,
-"events": [Object(InputEventJoypadMotion,"axis":0,"axis_value":1.0)]
-}
-ui_up={
-"deadzone": 0.5,
-"events": [Object(InputEventJoypadMotion,"axis":1,"axis_value":-1.0)]
-}
-ui_down={
-"deadzone": 0.5,
-"events": [Object(InputEventJoypadMotion,"axis":1,"axis_value":1.0)]
+"events": [Object(InputEventKey,"keycode":4194305), Object(InputEventJoypadButton,"button_index":1)]
 }
 
 [global]
