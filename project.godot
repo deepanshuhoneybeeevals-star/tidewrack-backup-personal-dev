@@ -30,8 +30,20 @@ window/stretch/aspect="keep"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 
-; Use the built-in ui_* actions. Overriding their event arrays with only
-; gamepad events removes the default keyboard bindings.
+; Keep the built-in directional actions (arrows, D-pad, and left stick).
+; Accept/cancel overrides must list keyboard AND gamepad events: these arrays
+; replace the defaults rather than adding to them.
+
+[input]
+
+ui_accept={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"keycode":4194309), Object(InputEventKey,"keycode":4194310), Object(InputEventKey,"keycode":32), Object(InputEventJoypadButton,"button_index":0)]
+}
+ui_cancel={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"keycode":4194305), Object(InputEventJoypadButton,"button_index":1)]
+}
 
 [global]
 

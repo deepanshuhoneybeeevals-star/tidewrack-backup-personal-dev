@@ -32,6 +32,7 @@ def main():
         run([args.godot, "--headless", "--path", ".", "--editor", "--import", "--quit"], env)
         run([args.godot, "--headless", "--path", ".", "tests/test_choice_carry.tscn"], env)
         run([args.godot, "--headless", "--path", ".", "tests/test_pause_menu.tscn"], env)
+        run([args.godot, "--headless", "--path", ".", "tests/test_controller_input.tscn"], env)
         for mode in ("--journal-write", "--journal-read"):
             run([args.godot, "--headless", "--path", ".", "tests/test_choice_carry.tscn", "--", mode], env)
 

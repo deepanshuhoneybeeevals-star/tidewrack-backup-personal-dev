@@ -16,7 +16,11 @@ not runtime state or the menu flow.
 
 The project also replaced the default `ui_*` input arrays with gamepad-only
 arrays. Engine checks confirmed all seven documented keyboard bindings were
-missing. The fix restores Godot's built-in actions.
+missing. The directional actions now use Godot's defaults, which retain the
+left stick, D-pad, and arrows at the same 0.5 deadzone. The initial removal of
+all overrides also dropped gamepad A/B from accept/cancel; this follow-up
+corrects that with explicit keyboard-plus-gamepad bindings for those two
+actions. Enter, keypad Enter, Space, Escape, and A/B now coexist.
 
 ## Behavior after this change
 
@@ -89,6 +93,10 @@ The save test scene
 refuses to run against the ordinary user-data directory. Pause regressions
 dispatch actual Escape key events through Godot, covering repeated cycles,
 key-repeat suppression, Resume, nested Settings, and the dialogue guard.
+Controller regressions inject joypad events and verify all four left-stick
+movement directions through the actual Player code, the deadzone, and A/B
+action press/release. These are synthetic engine tests, not a physical-device
+compatibility test.
 
 Before the fix, the disk checks passed and the two reread checks failed. Before
 the input fix, all seven keyboard-binding checks failed. All now pass.

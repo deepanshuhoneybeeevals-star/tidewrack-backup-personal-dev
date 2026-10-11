@@ -19,8 +19,9 @@ Built solo by **Fogline Games** (Seattle) in **Godot 4**, shipping to Steam.
 | Advance / skip line | Enter / Space     |
 | Pause / back  | Esc                     |
 
-The game uses only Godot's built-in input actions, so it works with no input
-remapping (dedicated controller support and remappable keys are outside this fix).
+The game uses Godot's built-in input actions. Bindings include keyboard controls,
+left-stick/D-pad movement, A to accept, and B to pause/back (Xbox-style labels).
+Accept/cancel explicitly include both keyboard and gamepad events.
 
 ## Running it
 
@@ -104,7 +105,7 @@ python3 tests/run_tests.py --godot /path/to/godot
 
 Godot 4.3 headless checks cover keeper choices, save/load, the menu Continue
 flow, journal discovery/persistence (including a fresh-process Continue),
-legacy saves, and keyboard mappings. An exported-build visual playthrough
+legacy saves, keyboard mappings, and synthetic controller input. An exported-build visual playthrough
 and clean-account install remain release gates.
 
 ## Steam Next Fest demo
