@@ -15,19 +15,23 @@ var flags: Dictionary = {}
 var current_scene: String = "res://scenes/game.tscn"
 
 
+## Store a story flag and notify state listeners.
 func set_flag(name: String, value: Variant) -> void:
 	flags[name] = value
 	state_changed.emit()
 
 
+## Return a story flag, or the supplied default when it is absent.
 func get_flag(name: String, default: Variant = false) -> Variant:
 	return flags.get(name, default)
 
 
+## Distinguish an unanswered flag from one explicitly set to false.
 func has_flag(name: String) -> bool:
 	return flags.has(name)
 
 
+## Reset story flags, discovered logs, and the starting scene.
 func new_game() -> void:
 	flags.clear()
 	Journal.clear()
@@ -35,10 +39,12 @@ func new_game() -> void:
 	state_changed.emit()
 
 
+## Report whether the single save slot exists on disk.
 func has_save() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
 
 
+## Write the current scene, flags, and journal entries to the save slot.
 func save_game() -> bool:
 	var payload := {
 		"version": SAVE_VERSION,
@@ -55,6 +61,7 @@ func save_game() -> bool:
 	return true
 
 
+## Restore saved progress, defaulting missing legacy journal data to empty.
 func load_game() -> bool:
 	if not has_save():
 		return false
@@ -81,6 +88,7 @@ func load_game() -> bool:
 	return true
 
 
+## Remove the save slot without changing the current session.
 func delete_save() -> void:
 	if has_save():
 		DirAccess.remove_absolute(SAVE_PATH)

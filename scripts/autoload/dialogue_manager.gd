@@ -22,6 +22,7 @@ var _current_id: String = ""
 var is_active: bool = false
 
 
+## Load a dialogue graph and begin at the requested entry node.
 func start(path: String, start_id: String = "start") -> bool:
 	var graph := _load_graph(path)
 	if graph.is_empty():
@@ -64,6 +65,7 @@ func choose(index: int) -> void:
 		_goto(str(next))
 
 
+## Resolve flag-based routes, apply node effects, and show the next line.
 func _goto(id: String) -> void:
 	# Routing nodes do not show a line. Bound traversal so a bad routing cycle
 	# cannot freeze the game. Ordinary dialogue loops still wait for input.
@@ -101,6 +103,7 @@ func _goto(id: String) -> void:
 	)
 
 
+## Require every condition flag to exist and match its expected value.
 func _matches_flags(expected: Dictionary) -> bool:
 	for key in expected:
 		if not GameState.has_flag(str(key)) or GameState.get_flag(str(key)) != expected[key]:
@@ -108,11 +111,13 @@ func _matches_flags(expected: Dictionary) -> bool:
 	return true
 
 
+## Apply authored story flags through GameState.
 func _apply_flags(dict: Dictionary) -> void:
 	for key in dict:
 		GameState.set_flag(str(key), dict[key])
 
 
+## Clear the active conversation and notify listeners that it ended.
 func _finish() -> void:
 	is_active = false
 	_graph = {}
@@ -120,6 +125,7 @@ func _finish() -> void:
 	dialogue_finished.emit()
 
 
+## Read a JSON dialogue graph, returning an empty dictionary on failure.
 func _load_graph(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		push_error("DialogueManager: dialogue file not found: %s" % path)

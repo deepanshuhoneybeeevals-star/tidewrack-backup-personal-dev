@@ -7,6 +7,7 @@ var last_text: String = ""
 var last_choices: Array = []
 
 
+## Protect the real save slot and initialize the persistent test runner.
 func _ready() -> void:
 	var isolated := OS.get_environment("TIDEWRACK_TEST_DATA")
 	if isolated.is_empty() or not OS.get_user_data_dir().begins_with(isolated + "/"):
@@ -15,18 +16,21 @@ func _ready() -> void:
 		return
 	# Keep the runner alive while exercising real scene transitions.
 	get_tree().current_scene = null
+	## Capture the displayed line and choices for test assertions.
 	DialogueManager.line_shown.connect(func(_speaker: String, text: String, choices: Array):
 		last_text = text
 		last_choices = choices)
 	call_deferred("_run")
 
 
+## Record a failed assertion without stopping the remaining checks.
 func check(ok: bool, message: String) -> void:
 	if not ok:
 		failures += 1
 		printerr("FAIL: " + message)
 
 
+## Finish the active graph with a bounded number of steps.
 func finish_dialogue() -> void:
 	for step in 20:
 		if not DialogueManager.is_active:
@@ -38,6 +42,7 @@ func finish_dialogue() -> void:
 	check(false, "dialogue should terminate")
 
 
+## Run save regressions or one stage of the cross-process persistence check.
 func _run() -> void:
 	if "--journal-write" in OS.get_cmdline_user_args():
 		test_journal_restart_write()
@@ -86,6 +91,7 @@ func _run() -> void:
 	get_tree().quit(1 if failures else 0)
 
 
+## Verify all keeper decisions persist and are remembered on rereading.
 func test_choice_matrix() -> void:
 	for stance in 2:
 		for disclosure in 2:
@@ -127,6 +133,7 @@ func test_choice_matrix() -> void:
 				check(GameState.flags == expected, "rereading does not mutate decisions")
 
 
+## Verify old saves preserve valid flags and resolve ambiguous stances.
 func test_legacy_saves() -> void:
 	for stance in ["skeptic", "believer"]:
 		var legacy_flags := {stance: true, "trusted_edith": false, "future_flag": "preserved"}
@@ -154,12 +161,14 @@ func test_legacy_saves() -> void:
 		finish_dialogue()
 
 
+## Write a fixture payload to the isolated test save slot.
 func write_save(payload: Dictionary) -> void:
 	var file := FileAccess.open(GameState.SAVE_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(payload))
 	file.close()
 
 
+## Find a UI button recursively by its displayed caption.
 func button_named(root: Node, caption: String) -> Button:
 	if root is Button and root.text == caption:
 		return root
@@ -170,6 +179,7 @@ func button_named(root: Node, caption: String) -> Button:
 	return null
 
 
+## Exercise world interactions and the actual Save and Continue buttons.
 func test_menu_flow() -> void:
 	GameState.new_game()
 	var game := preload("res://scenes/game.tscn").instantiate()
@@ -225,6 +235,7 @@ func test_menu_flow() -> void:
 	await get_tree().process_frame
 
 
+## Verify the documented keyboard actions remain mapped.
 func test_keyboard_bindings() -> void:
 	for binding in [["ui_accept", KEY_ENTER], ["ui_accept", KEY_SPACE], ["ui_cancel", KEY_ESCAPE],
 		["ui_left", KEY_LEFT], ["ui_right", KEY_RIGHT], ["ui_up", KEY_UP], ["ui_down", KEY_DOWN]]:
@@ -233,11 +244,13 @@ func test_keyboard_bindings() -> void:
 		check(InputMap.action_has_event(binding[0], key), "keyboard binding: %s / %s" % binding)
 
 
+## Verify discovery, deduplication, reset, and compatible journal loading.
 func test_journal() -> void:
 	check(get_node_or_null("/root/Journal") != null, "Journal is an autoload")
 	GameState.new_game()
 	check(Journal.entries().is_empty(), "New Game clears the journal")
 	var discoveries: Array = []
+	## Capture emitted discoveries to verify deduplication and load behavior.
 	var on_discovery := func(id: String): discoveries.append(id)
 	Journal.entry_added.connect(on_discovery)
 	# Nearby interactions are not documents; only marked nodes record a log.
@@ -290,6 +303,7 @@ func test_journal() -> void:
 	Journal.entry_added.disconnect(on_discovery)
 
 
+## Save story and journal progress for a separate process to restore.
 func test_journal_restart_write() -> void:
 	GameState.new_game()
 	DialogueManager.start(INTRO, "logbook")
@@ -301,6 +315,7 @@ func test_journal_restart_write() -> void:
 	print("JOURNAL RESTART: saved keeper log and second test entry")
 
 
+## Restore saved progress through Continue in a fresh process.
 func test_journal_restart_read() -> void:
 	check(Journal.entries().is_empty(), "fresh process has no journal in memory")
 	var menu := preload("res://scenes/main_menu.tscn").instantiate()
@@ -326,6 +341,7 @@ func test_journal_restart_read() -> void:
 	print("JOURNAL RESTART: Continue verified in a separate process")
 
 
+## Verify Tom remembers both first-call choices until New Game resets them.
 func test_radio_memory() -> void:
 	for prior in [null, false]:
 		for first_choice in 2:

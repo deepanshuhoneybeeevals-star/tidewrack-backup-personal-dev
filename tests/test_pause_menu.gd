@@ -4,16 +4,19 @@ extends Node
 var failures: int = 0
 
 
+## Start the pause-menu checks after the scene is ready.
 func _ready() -> void:
 	call_deferred("_run")
 
 
+## Record a failed pause-menu assertion and continue testing.
 func check(ok: bool, message: String) -> void:
 	if not ok:
 		failures += 1
 		printerr("FAIL: " + message)
 
 
+## Find a menu button recursively by its displayed caption.
 func button_named(root: Node, caption: String) -> Button:
 	if root is Button and root.text == caption:
 		return root
@@ -24,6 +27,7 @@ func button_named(root: Node, caption: String) -> Button:
 	return null
 
 
+## Dispatch an Escape press and release, optionally simulating key repeat.
 func escape(echo: bool = false) -> void:
 	var event := InputEventKey.new()
 	event.keycode = KEY_ESCAPE
@@ -37,6 +41,7 @@ func escape(echo: bool = false) -> void:
 	await get_tree().process_frame
 
 
+## Count pause overlays still attached to the game scene.
 func overlay_count(game: Node) -> int:
 	var count := 0
 	for child in game.get_children():
@@ -45,6 +50,7 @@ func overlay_count(game: Node) -> int:
 	return count
 
 
+## Verify pause cleanup, Resume, nested Settings, and the dialogue guard.
 func _run() -> void:
 	var game := preload("res://scenes/game.tscn").instantiate()
 	add_child(game)

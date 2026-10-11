@@ -9,6 +9,7 @@ signal entry_added(id: String)
 var _entries: Array[String] = []
 
 
+## Record a nonblank log ID once and announce the new discovery.
 func discover(id: String) -> void:
 	if id.strip_edges().is_empty() or id in _entries:
 		return
@@ -16,14 +17,17 @@ func discover(id: String) -> void:
 	entry_added.emit(id)
 
 
+## Return a copy of discovered log IDs in discovery order.
 func entries() -> Array[String]:
 	return _entries.duplicate()
 
 
+## Report whether a log ID has already been discovered.
 func has(id: String) -> bool:
 	return id in _entries
 
 
+## Remove all discovered logs from the current session.
 func clear() -> void:
 	_entries.clear()
 
