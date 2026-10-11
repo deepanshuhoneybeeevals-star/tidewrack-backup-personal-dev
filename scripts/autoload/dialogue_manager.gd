@@ -7,6 +7,8 @@ extends Node
 ##     "next": String|null,                     # linear node; null ends the graph
 ##     "choices": [ {"text": String, "next": String, "set_flag": {..}} ],
 ##     "set_flag": { "flag_name": value } }      # applied when the node is entered
+## A routing node has "branches": [{"when": {flag: value}, "next": id|null}]
+## and a fallback "next". First matching branch wins; absent flags never match.
 ##
 ## UI (dialogue_box.gd) listens to these signals; it does not read the graph.
 
@@ -62,6 +64,25 @@ func choose(index: int) -> void:
 
 
 func _goto(id: String) -> void:
+	# Routing nodes do not show a line. Bound traversal so a bad routing cycle
+	# cannot freeze the game. Ordinary dialogue loops still wait for input.
+	var visited: Dictionary = {}
+	while _graph.has(id) and _graph[id].has("branches"):
+		if visited.has(id):
+			push_error("DialogueManager: routing cycle at '%s'." % id)
+			_finish()
+			return
+		visited[id] = true
+		var route: Dictionary = _graph[id]
+		var target: Variant = route.get("next", null)
+		for branch in route["branches"]:
+			if _matches_flags(branch["when"]):
+				target = branch.get("next", null)
+				break
+		if target == null:
+			_finish()
+			return
+		id = str(target)
 	if not _graph.has(id):
 		push_error("DialogueManager: missing node '%s'." % id)
 		_finish()
@@ -74,6 +95,13 @@ func _goto(id: String) -> void:
 		str(node.get("text", "")),
 		node.get("choices", [])
 	)
+
+
+func _matches_flags(expected: Dictionary) -> bool:
+	for key in expected:
+		if not GameState.has_flag(str(key)) or GameState.get_flag(str(key)) != expected[key]:
+			return false
+	return true
 
 
 func _apply_flags(dict: Dictionary) -> void:

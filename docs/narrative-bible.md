@@ -44,6 +44,12 @@ stable — save files and future branches depend on them.
 | `trusted_edith` | Logbook, choice 2 (true/false)           | Player will / won't share the log. |
 | `radioed_tom`   | Radio conversation                        | Player has contacted Tom. |
 
+Keeper decisions are remembered when the log is reread. The two stance flags
+are mutually exclusive when chosen. `trusted_edith: false` is a deliberate
+quiet decision; a missing flag means the player has not answered. Legacy saves
+with both stances true require a new stance choice because their ordering is
+unknown. Canonical flag names and the version-1 save format remain unchanged.
+
 ## Timeline (fiction)
 
 1. Edith keeps the light alone; the fog rolls in for three nights.

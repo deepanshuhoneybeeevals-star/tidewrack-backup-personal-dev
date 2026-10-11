@@ -24,6 +24,10 @@ func get_flag(name: String, default: Variant = false) -> Variant:
 	return flags.get(name, default)
 
 
+func has_flag(name: String) -> bool:
+	return flags.has(name)
+
+
 func new_game() -> void:
 	flags.clear()
 	current_scene = "res://scenes/game.tscn"
