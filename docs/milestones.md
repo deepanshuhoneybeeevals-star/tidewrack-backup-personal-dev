@@ -32,7 +32,8 @@ For the public demo we ship the vertical slice **plus**:
 
 - **Lamp-room chapter** — the stair from the ground floor opens into the lamp
   room; relighting the lamp is the demo's closing beat.
-- **Journal** — discovered logs collect into a readable in-game journal.
+- **Journal** — record discovered logs and retain them across Save / Continue.
+  The reader UI is deferred to a later milestone.
 - **Controller support** — gamepad input map layered on the built-in actions.
 - **Playtest fixes** — the round of fixes from the vertical-slice playtests.
 

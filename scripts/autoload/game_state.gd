@@ -30,6 +30,7 @@ func has_flag(name: String) -> bool:
 
 func new_game() -> void:
 	flags.clear()
+	Journal.clear()
 	current_scene = "res://scenes/game.tscn"
 	state_changed.emit()
 
@@ -43,6 +44,7 @@ func save_game() -> bool:
 		"version": SAVE_VERSION,
 		"scene": current_scene,
 		"flags": flags,
+		"journal_entries": Journal.entries(),
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -73,6 +75,8 @@ func load_game() -> bool:
 	current_scene = data.get("scene", "res://scenes/game.tscn")
 	var loaded_flags: Variant = data.get("flags", {})
 	flags = loaded_flags if typeof(loaded_flags) == TYPE_DICTIONARY else {}
+	# Optional, additive v1 field. Missing/malformed journal data is empty.
+	Journal.restore(data.get("journal_entries", []))
 	state_changed.emit()
 	return true
 

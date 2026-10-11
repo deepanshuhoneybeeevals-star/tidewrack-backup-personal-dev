@@ -25,17 +25,36 @@ missing. The fix restores Godot's built-in actions.
   ending, both within the session and after Continue. New Game clears them.
 - Choosing a stance sets the other stance false.
 - An absent disclosure flag means unanswered; a stored false means keep quiet.
-- Version-1 saves keep their schema, canonical names, and unknown flags.
+- Version-1 saves keep their canonical names and unknown flags; an optional
+  `journal_entries` array is added for discovered logs.
   Single-stance old saves work without migration. Old saves with both stances
   true ask for a stance again; the new answer resolves the conflict. There is
   no history in the old save that identifies which answer was most recent.
-- This is scene/flag persistence, not a mid-line or player-position checkpoint.
+- This is scene/flag/journal persistence, not a mid-line or player-position checkpoint.
   Saving remains available after finishing the conversation via the pause menu.
 
 Routing nodes in dialogue JSON use ordered `branches` containing `when` flag
 maps and `next` targets, plus a fallback `next`. Every flag in a condition must
 exist and match. Routing does not show text or apply effects. A runtime guard
 stops routing cycles; the validator checks routing structure and target reachability.
+
+## Journal discovery and persistence
+
+`Journal` is now an autoload, initialized before `GameState`. Displayed dialogue
+nodes opt in with `"journal_entry": "stable_log_id"`; the existing logbook entry
+records `keeper_log` on opening. Radio and stair interactions are not documents
+and do not record logs. Further authored logs can use the same hook.
+
+Discovery preserves first-found order and emits `entry_added` once per ID.
+`GameState.save_game()` writes `journal_entries` alongside flags and scene;
+Continue replaces the current journal from that array. New Game clears it.
+Loading does not emit discovery events. Old saves without the optional array
+load an empty journal; discoveries cannot be reconstructed from absent history.
+Malformed arrays are treated as empty; within arrays, invalid/blank IDs are
+ignored and duplicates removed while valid unknown IDs are preserved.
+
+The journal screen is explicitly deferred to a later milestone. This change
+implements the running service, discovery hook, and persistence only.
 
 ## Repeatable checks
 
@@ -46,11 +65,15 @@ python3 tests/run_tests.py --godot /path/to/godot
 ```
 
 The runner isolates `user://` in a temporary directory, validates both authored
-graphs, runs seven validator unit tests, imports the project, and runs Godot
+graphs, runs nine validator unit tests, imports the project, and runs Godot
 regressions. The engine tests cover all four stance/disclosure combinations,
 false versus absent, exclusive flags, legacy/ambiguous saves, repeated reads,
 New Game, invalid choice indexes, keyboard mappings, and the real world-object,
-choice-button, pause Save, Main Menu, and Continue signal flow. The test scene
+choice-button, pause Save, Main Menu, and Continue signal flow. Journal checks
+cover authored discovery, duplicate suppression, reset, legacy/malformed data,
+and ordered multi-entry restoration. A separate Godot process saves and exits,
+then a fresh process uses the actual Continue button to restore the entries.
+The test scene
 refuses to run against the ordinary user-data directory.
 
 Before the fix, the disk checks passed and the two reread checks failed. Before
@@ -64,12 +87,12 @@ complete public demo. In this checkout:
 - `scripts/lamp_room.gd` is an empty room/placeholder lamp. The ground-floor stair
   still starts the “next chapter” line instead of changing scenes. There is no
   relighting interaction or closing beat; `data/dialogue/lamp_room.json` is draft.
-- `scripts/journal.gd` has storage helpers only, no reader UI or persistence, and
-  is not registered as an autoload or connected to discovery.
+- Journal discovery and persistence now run. The reader UI is deferred to a
+  later milestone and is not a release gate for this work.
 - The wall-collision helper is a TODO and is not called; only room bounds work.
 
 Do not treat the old README's “feature-frozen” wording or the release tag as
-proof that those systems shipped. Resolve the required lamp-room and journal
+proof that those systems shipped. Resolve the required lamp-room
 work before labeling this checkout a complete demo. Controller work is not
 expanded by this fix.
 

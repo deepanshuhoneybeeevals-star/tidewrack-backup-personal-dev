@@ -9,6 +9,7 @@ extends Node
 ##     "set_flag": { "flag_name": value } }      # applied when the node is entered
 ## A routing node has "branches": [{"when": {flag: value}, "next": id|null}]
 ## and a fallback "next". First matching branch wins; absent flags never match.
+## Displayed nodes may include "journal_entry": "stable_log_id" to discover a log.
 ##
 ## UI (dialogue_box.gd) listens to these signals; it does not read the graph.
 
@@ -90,6 +91,9 @@ func _goto(id: String) -> void:
 	_current_id = id
 	var node: Dictionary = _graph[id]
 	_apply_flags(node.get("set_flag", {}))
+	var journal_entry: Variant = node.get("journal_entry", null)
+	if typeof(journal_entry) == TYPE_STRING:
+		Journal.discover(journal_entry)
 	line_shown.emit(
 		str(node.get("speaker", "")),
 		str(node.get("text", "")),

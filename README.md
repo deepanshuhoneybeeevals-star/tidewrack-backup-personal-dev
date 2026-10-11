@@ -41,7 +41,7 @@ The main scene is `scenes/main_menu.tscn`. Saves are written to Godot's
 
 ```
 tidewrack/
-├── project.godot            # engine config; registers the two autoloads
+├── project.godot            # engine config; registers the three autoloads
 ├── scenes/                  # thin .tscn wrappers (root node + script)
 │   ├── main_menu.tscn
 │   ├── game.tscn            # the vertical-slice level
@@ -74,7 +74,10 @@ or route according to saved flags (`"branches"`).
 Line and choice nodes can set story flags via `"set_flag"`, which `GameState`
 persists. Routing nodes can read those flags via ordered `"branches"` with
 `"when"` conditions and a fallback `"next"`. Keeper rereads follow the saved
-stance and disclosure decision. See [choice carry](docs/choice-carry.md).
+stance and disclosure decision. A displayed node can record a discovered log
+with `"journal_entry": "stable_log_id"`. The keeper log uses `keeper_log`;
+`Journal` deduplicates discoveries and `GameState` persists them. The journal
+reader UI is deferred. See [choice carry and journal persistence](docs/choice-carry.md).
 
 ```json
 {
@@ -100,15 +103,17 @@ python3 tests/run_tests.py --godot /path/to/godot
 ```
 
 Godot 4.3 headless checks cover keeper choices, save/load, the menu Continue
-flow, legacy saves, and keyboard mappings. An exported-build visual playthrough
+flow, journal discovery/persistence (including a fresh-process Continue),
+legacy saves, and keyboard mappings. An exported-build visual playthrough
 and clean-account install remain release gates.
 
 ## Steam Next Fest demo
 
 The public-demo target extends the vertical slice with the lamp-room chapter
-and a discovered-logs journal. Although this checkout carries `v0.2-demo-rc`,
-those systems are still scaffolds, and the stair is not connected to the lamp
-room. The tag does **not** indicate a complete, feature-frozen demo.
+and discovered-log tracking. Journal discovery and save persistence now work;
+the reader UI belongs to a later milestone. Although this checkout carries
+`v0.2-demo-rc`, the lamp room is still a scaffold and the stair is not connected
+to it. The tag does **not** indicate a complete, feature-frozen demo.
 
 See [the diagnosis and pre-branch checks](docs/choice-carry.md) for verified
 behavior and remaining demo blockers. The current fix restores the built-in

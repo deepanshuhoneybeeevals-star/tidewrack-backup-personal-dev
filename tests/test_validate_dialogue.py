@@ -51,3 +51,14 @@ class RoutingValidationTests(unittest.TestCase):
     def test_malformed_choices_do_not_crash_reachability(self):
         graph = {"start": {"choices": [None, {"text": "End", "next": None}]}}
         self.assertTrue(self.validate(graph)[0])
+
+
+    def test_journal_entry_requires_nonempty_id(self):
+        for value in (None, 4, [], {}, "", "   "):
+            self.assertTrue(self.validate({"start": {"journal_entry": value, "next": None}})[0])
+        self.assertEqual(self.validate({"start": {"journal_entry": "keeper_log", "next": None}}), ([], []))
+
+    def test_routing_cannot_discover_unshown_logs(self):
+        graph = self.graph()
+        graph["start"]["journal_entry"] = "keeper_log"
+        self.assertTrue(self.validate(graph)[0])

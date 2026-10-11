@@ -39,6 +39,14 @@ func finish_dialogue() -> void:
 
 
 func _run() -> void:
+	if "--journal-write" in OS.get_cmdline_user_args():
+		test_journal_restart_write()
+		get_tree().quit(1 if failures else 0)
+		return
+	if "--journal-read" in OS.get_cmdline_user_args():
+		await test_journal_restart_read()
+		get_tree().quit(1 if failures else 0)
+		return
 	# Actual authored graph -> choice -> disk -> fresh state -> load.
 	GameState.new_game()
 	check(DialogueManager.start(INTRO, "logbook"), "keeper graph starts")
@@ -70,9 +78,10 @@ func _run() -> void:
 	test_keyboard_bindings()
 	test_choice_matrix()
 	test_legacy_saves()
+	test_journal()
 	await test_menu_flow()
 	GameState.delete_save()
-	print("Choice carry tests: %d failure(s)" % failures)
+	print("Choice and journal tests: %d failure(s)" % failures)
 	get_tree().quit(1 if failures else 0)
 
 
@@ -167,6 +176,7 @@ func test_menu_flow() -> void:
 	get_tree().current_scene = game
 	# Interact through the actual world object and choose via actual UI buttons.
 	game._interactables[0].interact()
+	check(Journal.entries() == ["keeper_log"], "world logbook discovers exactly one log")
 	DialogueManager.advance()
 	DialogueManager.advance()
 	var box := game.get_node("DialogueBox")
@@ -197,7 +207,9 @@ func test_menu_flow() -> void:
 	game = get_tree().current_scene
 	check(game.scene_file_path == "res://scenes/game.tscn", "Continue opens saved scene")
 	check(GameState.flags == expected, "Continue restores decisions")
+	check(Journal.entries() == ["keeper_log"], "Continue restores log before interacting again")
 	game._interactables[0].interact()
+	check(Journal.entries() == ["keeper_log"], "world logbook discovers exactly one log")
 	DialogueManager.advance()
 	DialogueManager.advance()
 	check(last_choices.is_empty() and last_text.begins_with("Fog does strange work"), "world interaction after Continue remembers skeptic")
@@ -213,3 +225,91 @@ func test_keyboard_bindings() -> void:
 		var key := InputEventKey.new()
 		key.keycode = binding[1]
 		check(InputMap.action_has_event(binding[0], key), "keyboard binding: %s / %s" % binding)
+
+
+func test_journal() -> void:
+	check(get_node_or_null("/root/Journal") != null, "Journal is an autoload")
+	GameState.new_game()
+	check(Journal.entries().is_empty(), "New Game clears the journal")
+	var discoveries: Array = []
+	var on_discovery := func(id: String): discoveries.append(id)
+	Journal.entry_added.connect(on_discovery)
+	# Nearby interactions are not documents; only marked nodes record a log.
+	for entry in ["door", "radio"]:
+		DialogueManager.start(INTRO, entry)
+		finish_dialogue()
+	check(Journal.entries().is_empty(), "radio and stairs do not discover logs")
+	DialogueManager.start(INTRO, "logbook")
+	check(Journal.has("keeper_log"), "opening the authored log discovers it")
+	finish_dialogue()
+	DialogueManager.start(INTRO, "logbook")
+	finish_dialogue()
+	check(discoveries == ["keeper_log"], "rereading emits discovery only once")
+	# Exercise multiple IDs without inventing another document in game content.
+	Journal.discover("test_second_log")
+	Journal.discover("test_second_log")
+	Journal.discover("")
+	Journal.discover("   ")
+	check(Journal.entries() == ["keeper_log", "test_second_log"], "entries stay unique and ordered")
+	var snapshot := Journal.entries()
+	snapshot.clear()
+	check(Journal.entries().size() == 2, "entries returns a copy")
+	check(GameState.save_game(), "journal save succeeds")
+	var payload: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(GameState.SAVE_PATH))
+	check(payload.journal_entries == ["keeper_log", "test_second_log"], "journal IDs are on disk")
+	GameState.new_game()
+	check(Journal.entries().is_empty(), "New Game clears discovered logs")
+	Journal.discover("unsaved_other_session")
+	discoveries.clear()
+	check(GameState.load_game(), "journal save loads")
+	check(Journal.entries() == ["keeper_log", "test_second_log"], "load replaces rather than merges journals")
+	check(discoveries.is_empty(), "restoring entries does not announce fresh discoveries")
+	Journal.discover("keeper_log")
+	check(discoveries.is_empty(), "restored entry cannot be discovered twice")
+	write_save({"version": 1, "flags": {"skeptic": true}})
+	check(GameState.load_game(), "pre-journal save loads")
+	check(Journal.entries().is_empty(), "pre-journal save clears stale session entries")
+	check(GameState.get_flag("skeptic") == true, "pre-journal story flags remain intact")
+	for invalid in [null, "keeper_log", 42, {"keeper_log": true}]:
+		Journal.discover("stale")
+		write_save({"version": 1, "journal_entries": invalid})
+		check(GameState.load_game(), "malformed journal field does not break loading")
+		check(Journal.entries().is_empty(), "malformed journal field becomes empty")
+	write_save({"version": 1, "journal_entries": ["future_log", null, 2, "", "  ", "keeper_log", "future_log"]})
+	check(GameState.load_game(), "mixed journal list loads")
+	check(Journal.entries() == ["future_log", "keeper_log"], "valid IDs survive in order; invalid and duplicate values are ignored")
+	GameState.delete_save()
+	check(not GameState.load_game(), "missing save returns false")
+	check(Journal.entries() == ["future_log", "keeper_log"], "failed load does not clear the journal")
+	Journal.entry_added.disconnect(on_discovery)
+
+
+func test_journal_restart_write() -> void:
+	GameState.new_game()
+	DialogueManager.start(INTRO, "logbook")
+	finish_dialogue()
+	Journal.discover("test_second_log")
+	check(GameState.save_game(), "cross-process save succeeds")
+	print("JOURNAL RESTART: saved keeper log and second test entry")
+
+
+func test_journal_restart_read() -> void:
+	check(Journal.entries().is_empty(), "fresh process has no journal in memory")
+	var menu := preload("res://scenes/main_menu.tscn").instantiate()
+	get_tree().root.add_child(menu)
+	get_tree().current_scene = menu
+	button_named(menu, "Continue").pressed.emit()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(get_tree().current_scene.scene_file_path == "res://scenes/game.tscn", "fresh-process Continue opens saved scene")
+	check(Journal.entries() == ["keeper_log", "test_second_log"], "fresh-process Continue restores all entries in order")
+	check(GameState.get_flag("skeptic") == true, "fresh-process Continue still restores choices")
+	var game := get_tree().current_scene
+	game._interactables[0].interact()
+	finish_dialogue()
+	check(Journal.entries() == ["keeper_log", "test_second_log"], "post-restart reread does not duplicate entries")
+	game.queue_free()
+	get_tree().current_scene = null
+	await get_tree().process_frame
+	GameState.delete_save()
+	print("JOURNAL RESTART: Continue verified in a separate process")
