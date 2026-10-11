@@ -7,7 +7,7 @@ Checks, for every data/dialogue/*.json file:
     ("choices": [{text, next, set_flag?}]) — not neither, not both
   - routing nodes have branches with flag conditions and a fallback next
   - every referenced target id exists
-  - at least one terminal (next == null) is reachable from an entry point
+  - at least one terminal is reachable from each known or entry_* entry point
   - reports orphan nodes (unreachable from any known entry) as warnings
 
 Exit code 0 = all valid, 1 = at least one error.
@@ -22,6 +22,7 @@ from pathlib import Path
 
 # Entry-point node ids the game starts graphs from (see scripts/game.gd).
 KNOWN_ENTRIES = {"logbook", "radio", "door", "start"}
+JOURNAL_ENTRY_PREFIX = "entry_"
 
 ROOT = Path(__file__).resolve().parent.parent
 DIALOGUE_DIR = ROOT / "data" / "dialogue"
@@ -130,9 +131,13 @@ def validate_file(path: Path) -> tuple[list[str], list[str]]:
     if not has_terminal:
         errors.append(f"{path.name}: no terminal node (a node with next == null) — the graph never ends")
 
-    entries = KNOWN_ENTRIES & set(graph.keys())
+    entries = (KNOWN_ENTRIES & set(graph)) | {
+        nid for nid in graph if nid.startswith(JOURNAL_ENTRY_PREFIX)
+    }
     if not entries:
-        warnings.append(f"{path.name}: no known entry point ({sorted(KNOWN_ENTRIES)}) present")
+        warnings.append(
+            f"{path.name}: no known entry point ({sorted(KNOWN_ENTRIES)} or {JOURNAL_ENTRY_PREFIX}*) present"
+        )
     else:
         seen = reachable(graph, entries)
         for entry in sorted(entries):

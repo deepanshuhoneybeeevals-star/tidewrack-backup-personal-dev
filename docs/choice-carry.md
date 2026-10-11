@@ -37,6 +37,10 @@ Routing nodes in dialogue JSON use ordered `branches` containing `when` flag
 maps and `next` targets, plus a fallback `next`. Every flag in a condition must
 exist and match. Routing does not show text or apply effects. A runtime guard
 stops routing cycles; the validator checks routing structure and target reachability.
+The checker treats every node ID beginning with `entry_` as a starting point,
+alongside `logbook`, `radio`, `door`, and `start`. Each starting point must reach
+an ending; orphan checks use the union of all starting points. This convention
+is separate from the `journal_entry` discovery metadata.
 
 ## Journal discovery and persistence
 
@@ -73,7 +77,7 @@ python3 tests/run_tests.py --godot /path/to/godot
 ```
 
 The runner isolates `user://` in a temporary directory, validates both authored
-graphs, runs nine validator unit tests, imports the project, and runs Godot
+graphs, runs fourteen validator unit tests, imports the project, and runs Godot
 regressions. The engine tests cover all four stance/disclosure combinations,
 false versus absent, exclusive flags, legacy/ambiguous saves, repeated reads,
 New Game, invalid choice indexes, keyboard mappings, and the real world-object,

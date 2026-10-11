@@ -62,3 +62,36 @@ class RoutingValidationTests(unittest.TestCase):
         graph = self.graph()
         graph["start"]["journal_entry"] = "keeper_log"
         self.assertTrue(self.validate(graph)[0])
+
+    def test_journal_only_graph_has_an_entry_point(self):
+        graph = {"entry_keeper": {"next": "page"}, "page": {"next": None}}
+        self.assertEqual(self.validate(graph), ([], []))
+
+    def test_journal_entry_requires_its_own_reachable_terminal(self):
+        graph = {"entry_loop": {"next": "entry_loop"}, "unrelated_end": {"next": None}}
+        errors, warnings = self.validate(graph)
+        self.assertIn("test.json:entry_loop: no reachable terminal", errors)
+        self.assertTrue(any(":unrelated_end: unreachable" in warning for warning in warnings))
+        self.assertFalse(any("no known entry point" in warning for warning in warnings))
+
+    def test_mixed_normal_and_journal_entries_contribute_to_reachability(self):
+        graph = {"start": {"next": "normal_end"}, "normal_end": {"next": None},
+                 "entry_one": {"choices": [{"text": "Read", "next": "journal_end"}]},
+                 "entry_two": {"branches": [{"when": {"skeptic": True}, "next": "journal_end"}],
+                               "next": "journal_end"},
+                 "journal_end": {"next": None}, "orphan": {"next": None}}
+        errors, warnings = self.validate(graph)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn(":orphan: unreachable", warnings[0])
+
+    def test_each_journal_entry_is_checked_even_when_another_can_end(self):
+        graph = {"entry_ok": {"next": None}, "entry_stuck": {"next": "entry_stuck"}}
+        errors, warnings = self.validate(graph)
+        self.assertEqual(errors, ["test.json:entry_stuck: no reachable terminal"])
+        self.assertEqual(warnings, [])
+
+    def test_similar_names_do_not_count_as_journal_entries(self):
+        errors, warnings = self.validate({"entryish": {"next": None}})
+        self.assertEqual(errors, [])
+        self.assertTrue(any("no known entry point" in warning for warning in warnings))
