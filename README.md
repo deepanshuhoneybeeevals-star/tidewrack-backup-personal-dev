@@ -113,8 +113,11 @@ and clean-account install remain release gates.
 The public-demo target extends the vertical slice with the lamp-room chapter
 and discovered-log tracking. Journal discovery and save persistence now work;
 the reader UI belongs to a later milestone. Although this checkout carries
-`v0.2-demo-rc`, the lamp room is still a scaffold and the stair is not connected
-to it. The tag does **not** indicate a complete, feature-frozen demo.
+`v0.2-demo-rc`, release readiness still requires the exported-build checks.
+The stair now opens a playable lamp room: interacting with the lamp relights
+it, saves `lamp_relit`, and turns its grey body gold with a visible glow. A
+return stair leads downstairs; both rooms share pause/save controls. No puzzle
+is required. Continue restores the lamp-room scene and the lamp’s appearance.
 
 See [the diagnosis and pre-branch checks](docs/choice-carry.md) for verified
 behavior and remaining demo blockers. The current fix restores the built-in

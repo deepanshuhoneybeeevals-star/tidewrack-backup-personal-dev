@@ -26,7 +26,7 @@ who answers you) responds. Repeat across locations toward the water.
 | Menus + settings   | ✅ vertical slice | Title, pause, volume, fullscreen. |
 | Player movement    | ✅ vertical slice | Top-down; wall collision pending. |
 | Journal            | Storage + persistence | Tracks discovered logs across Continue; reader UI deferred. |
-| Second location    | ⏳ demo           | The lamp room. |
+| Second location    | Minimal demo loop | Stair up/down, one-interaction lamp relight, saved lit appearance. |
 | Controller + remap  | ⏳ demo          | Currently keyboard-only, built-in actions. |
 | Localization        | ⏳ press build    | String extraction + translation tables. |
 | Accessibility       | ⏳ press build    | Text scale, dyslexia-friendly font, no-flash. |

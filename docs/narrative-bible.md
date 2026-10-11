@@ -34,7 +34,7 @@ Esther* than to horror. The uncanny is implied, never gored.
 
 ## Story flags (canonical)
 
-These are set by dialogue choices and persist via `GameState`. Keep names
+These are set by dialogue choices or world interactions and persist via `GameState`. Keep names
 stable — save files and future branches depend on them.
 
 | Flag            | Set by                                   | Meaning |
@@ -43,6 +43,7 @@ stable — save files and future branches depend on them.
 | `believer`      | Logbook, choice 1                        | Player believes something was out there. |
 | `trusted_edith` | Logbook, choice 2 (true/false)           | Player will / won't share the log. |
 | `radioed_tom`   | Radio conversation                        | Player has contacted Tom; subsequent calls use his returning greeting. |
+| `lamp_relit`    | Interacting with the great lamp            | Lamp is lit; restores gold color and glow after Continue. |
 
 Keeper decisions are remembered when the log is reread. The two stance flags
 are mutually exclusive when chosen. `trusted_edith: false` is a deliberate

@@ -33,8 +33,12 @@ def main():
         run([args.godot, "--headless", "--path", ".", "tests/test_choice_carry.tscn"], env)
         run([args.godot, "--headless", "--path", ".", "tests/test_pause_menu.tscn"], env)
         run([args.godot, "--headless", "--path", ".", "tests/test_controller_input.tscn"], env)
+        run([args.godot, "--headless", "--path", ".", "tests/test_lamp_room.tscn"], env)
         for mode in ("--journal-write", "--journal-read"):
             run([args.godot, "--headless", "--path", ".", "tests/test_choice_carry.tscn", "--", mode], env)
+
+        for mode in ("--lamp-write", "--lamp-read"):
+            run([args.godot, "--headless", "--path", ".", "tests/test_lamp_room.tscn", "--", mode], env)
 
 
 if __name__ == "__main__":

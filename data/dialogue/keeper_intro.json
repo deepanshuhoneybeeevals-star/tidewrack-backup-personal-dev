@@ -105,7 +105,7 @@
 	},
 	"door": {
 		"speaker": "",
-		"text": "The spiral stair climbs into the dark toward the lamp room. The great light is dead — no oil, no spark, no reason it should have gone out. Until you relight it, the water past the rocks stays invisible. (The lamp room is the next chapter.)",
+		"text": "The spiral stair climbs into the dark toward the lamp room. The great light is dead — no oil, no spark, no reason it should have gone out. Until you relight it, the water past the rocks stays invisible.",
 		"next": null
 	}
 }

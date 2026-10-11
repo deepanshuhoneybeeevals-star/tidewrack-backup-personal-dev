@@ -75,6 +75,20 @@ and Resume now share one cleanup path that detaches and frees the overlay and
 restores movement. Settings still consumes Escape first, leaving the game
 paused, and dialogue still blocks pause.
 
+## Minimal lamp-room loop
+
+The ground-floor stair now changes to `scenes/lamp_room.tscn`. The room inherits
+movement, interaction prompts, dialogue UI, and pause/save controls from
+`scripts/game.gd`; a second stair returns downstairs. Scene changes are deferred
+until the interaction callback finishes and block duplicate input in transit.
+
+Interacting with the great lamp sets `lamp_relit` once, changes its grey body to
+gold, shows a warm glow and a lit label, and plays one short completion line.
+There is no puzzle. An already-lit lamp does not replay that line. Room entry
+reads the flag, so revisiting or Continue restores the appearance. Old saves
+without the flag start unlit; New Game clears it. Saving upstairs records the
+lamp-room scene, and existing choices and journal discoveries are preserved.
+
 ## Repeatable checks
 
 On Linux or WSL with Godot 4.3 installed:
@@ -100,32 +114,35 @@ key-repeat suppression, Resume, nested Settings, and the dialogue guard.
 Controller regressions inject joypad events and verify all four left-stick
 movement directions through the actual Player code, the deadzone, and A/B
 action press/release. These are synthetic engine tests, not a physical-device
-compatibility test.
+compatibility test. Lamp-room tests use Enter through the world-interaction
+path, check both stairs, unlit and lit saves, repeated interaction, and the
+color/glow/status properties. A fresh-process Continue restores the lit lamp
+upstairs. These headless checks do not replace a visual playthrough.
 
 Before the fix, the disk checks passed and the two reread checks failed. Before
 the input fix, all seven keyboard-binding checks failed. All now pass.
 
 ## Before cutting the demo branch
 
-This fixes choice carry; it does not establish that the tagged candidate is a
-complete public demo. In this checkout:
+This implements the requested minimal demo loop; it does not replace exported-build
+release checks. In this checkout:
 
-- `scripts/lamp_room.gd` is an empty room/placeholder lamp. The ground-floor stair
-  still starts the “next chapter” line instead of changing scenes. There is no
-  relighting interaction or closing beat; `data/dialogue/lamp_room.json` is draft.
+- The minimal lamp-room loop is implemented: stairs, relighting, visible lit
+  state, a completion line, and scene/flag restoration through Continue.
 - Journal discovery and persistence now run. The reader UI is deferred to a
   later milestone and is not a release gate for this work.
 - The wall-collision helper is a TODO and is not called; only room bounds work.
 
 Do not treat the old README's “feature-frozen” wording or the release tag as
-proof that those systems shipped. Resolve the required lamp-room
-work before labeling this checkout a complete demo. Controller work is not
-expanded by this fix.
+proof of release readiness. Resolve or explicitly defer wall collision and run
+the exported-build checks before labeling this checkout a complete demo.
 
 Manual release check, still required on the actual exported target build:
 start with a fresh save; use keyboard navigation to choose skeptic and quiet;
 finish the dialogue; Esc → Save → Main Menu → Continue; reread and verify the
 skeptic response and quiet ending without new decisions. Repeat after fully
 quitting the executable, then verify New Game offers both choices again. Check
-visual layout, focus, and a clean-account installation. Headless signal tests
+the stair in both directions, save upstairs before and after relighting, and
+verify the lit appearance after restarting. Check visual layout, focus, physical
+controller input, and a clean-account installation. Headless signal tests
 are not a visual playthrough or Steam export/install validation.
